@@ -1,0 +1,105 @@
+---
+title: " Tutorial 8"
+output:
+  html_document:
+    code_folding: hide
+---
+
+
+
+## Setup
+
+First, let's load the necessary libraries and data that will allow us to
+begin our investigation!
+
+```{r setup, message=FALSE,  warning=FALSE}
+## Libraries to include
+library(tidyverse)
+library(lubridate)
+
+
+## Load the data
+
+# Replace the path below with the path to where your data lives
+data_path <- "https://datajournalism.tech/wp-content/uploads/2019/10/wichita.csv"
+stops <- read_csv("https://datajournalism.tech/wp-content/uploads/2019/10/wichita.csv")
+
+# Additional data and fixed values we'll be using
+population_2016 <- tibble(
+  subject_race = c(
+    "asian/pacific islander", "black", "hispanic", "other/unknown","white"
+  ),
+  num_people = c(19294, 42485, 65090, 16686, 245499))
+
+
+center_lat <- 37.689789
+center_lng <- -97.3227720
+```
+
+## Exploratory data analysis
+
+ 
+
+```{r}
+colnames(stops)
+nrow(stops)
+str(stops)
+summary(stops)
+```
+
+
+```{r}
+# This method uses the group_by/summarize paradigm
+race <- stops %>% 
+  group_by(subject_race) %>% 
+  summarize(
+    n = n(),
+    prop = n / nrow(.)
+  )
+```
+
+
+
+## Benchmark test
+
+We saw before that over two-thirds of stops were of black drivers. The by-race
+stop counts are only meaningful, though, when compared to some baseline. If
+the Philadelphia population was about two-thirds black, then two-thirds of stops
+being of black drivers wouldn't be at all surprising. 
+
+### Stop rates
+
+In order to do this baseline comparison, we need to understand the racial
+demographics in our Philly population data. The data as we've given it to you
+has raw population numbers. To make it useful, we'll need to compute the
+_proportion_ of Philadelphia residents in each demographic group. (Hint: use the
+`mutate()` function.)
+
+```{r}
+population_2016 %>% 
+  mutate(prop = num_people / sum(num_people))
+```
+
+
+
+```{r}
+rate <- stops %>% 
+  count(subject_race) %>% 
+  left_join(
+    population_2016,
+    by = "subject_race"
+  ) %>% 
+  mutate(stop_rate = n / num_people)
+```
+
+
+## data visualitations
+
+```{r}
+ggplot(rate,aes(x= reorder(subject_race, stop_rate), y= stop_rate))+
+  geom_bar(stat="identity",
+           fill="yellow")+
+  coord_flip()+
+  labs(title="stops by oficers", subtitle="by race", caption="2016")
+```
+
